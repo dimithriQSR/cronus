@@ -1,9 +1,10 @@
-module server.go
+module qsrconnector
 
 go 1.19
 
 require (
 	github.com/MicahParks/keyfunc v1.2.2
+	github.com/golang-jwt/jwt/v4 v4.4.1
 	github.com/jackc/pgproto3/v2 v2.3.1
 	github.com/jackc/pgtype v1.12.0
 	github.com/jackc/pgx/v4 v4.17.0
@@ -13,7 +14,6 @@ require (
 
 require (
 	github.com/gofrs/uuid v4.0.0+incompatible // indirect
-	github.com/golang-jwt/jwt/v4 v4.4.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.13.0 // indirect
