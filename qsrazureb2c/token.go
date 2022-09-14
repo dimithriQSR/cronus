@@ -30,6 +30,7 @@ type Configuration struct {
 	AzureAdSignUpSignInPolicyId string
 	EnableTokenCheck            bool
 	DebugQuery                  bool
+	GrpcReflection              bool
 }
 
 var KeyType = "token"

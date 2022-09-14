@@ -28,6 +28,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 )
 
@@ -50,6 +51,7 @@ type Configuration struct {
 	AzureAdSignUpSignInPolicyId string
 	EnableTokenCheck            bool
 	DebugQuery                  bool
+	GrpcReflection              bool
 }
 
 const (
@@ -334,6 +336,10 @@ func (server *MessageServer) Run(cfg *Configuration, port int32, sslserver bool)
 			grpc.StreamInterceptor(streamInterceptor))
 	}
 	qsr.RegisterMessageServiceServer(s, server)
+	// enable or disable gRPC reflection
+	if cfg.GrpcReflection {
+		reflection.Register(s)
+	}
 	log.Printf("server listening at %v", lis.Addr())
 
 	return s.Serve(lis)
