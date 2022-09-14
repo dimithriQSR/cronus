@@ -163,18 +163,26 @@ func ProcesStream(s *MessageServer, in *qsr.QueryRequest, sr qsr.MessageService_
 	wg.Wait()
 }
 
+func isSqlInsert(sql string) bool {
+	sqlUppercase := strings.ToUpper(sql)
+	return strings.HasPrefix(sqlUppercase, "INSERT")
+}
+
 func (s *MessageServer) execByConn(in *qsr.QueryRequest, connid *[]string, exectype int) (*qsr.QueryReply, error) {
 	var errout error
 	bytesreturn := []byte{}
+
+	sql := strings.TrimSpace(in.GetMessage())
+	// Add RETURNING * to the end of insert SQL statement to return data on ExecStatement interface
+	if exectype == execinput && isSqlInsert(sql) {
+		sql = fmt.Sprintf("%s RETURNING *", in.GetMessage())
+	}
+	log.Printf("sql statement: %v\n", sql)
+
 	for _, v := range *connid {
 		if s.conn[v] != nil {
+			// Return data for insert SQL statement on ExecStatement interface
 			if exectype == queryinput || exectype == execinput {
-				// return data for execinput
-				sql := in.GetMessage()
-				if exectype == execinput {
-					sql = fmt.Sprintf("%s RETURNING *", in.GetMessage())
-				}
-				log.Printf("sql statement: %v\n", sql)
 				rows, err := s.conn[v].Query(context.Background(), sql)
 				if err != nil {
 					fmt.Println("issue with execution of query statement", in.GetMessage(), err)
@@ -200,8 +208,6 @@ func (s *MessageServer) execByConn(in *qsr.QueryRequest, connid *[]string, exect
 					defer rows.Close()
 				}
 			} else if exectype == execnoreturninput {
-				sql := in.GetMessage()
-				log.Printf("sql statement: %v\n", sql)
 				_, err := s.conn[v].Exec(context.Background(), sql)
 				if err != nil {
 					fmt.Println("issue with execution of exec statement", in.GetMessage(), err)
