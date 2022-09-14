@@ -55,10 +55,11 @@ type Configuration struct {
 }
 
 const (
-	clouddb    = "cloud"
-	localdb    = "local"
-	execinput  = 1
-	queryinput = 2
+	clouddb           = "cloud"
+	localdb           = "local"
+	execinput         = 1
+	execnoreturninput = 2
+	queryinput        = 3
 )
 
 var (
@@ -105,7 +106,7 @@ func (s *MessageServer) ExecStatementNoReturn(ctx context.Context, in *qsr.Query
 		log.Printf("Received: Execution")
 	}
 	connid := []string{clouddb, localdb}
-	go s.execByConn(in, &connid, execinput)
+	go s.execByConn(in, &connid, execnoreturninput)
 	ret := qsr.QueryReply{}
 	return &ret, nil
 }
@@ -167,8 +168,14 @@ func (s *MessageServer) execByConn(in *qsr.QueryRequest, connid *[]string, exect
 	bytesreturn := []byte{}
 	for _, v := range *connid {
 		if s.conn[v] != nil {
-			if exectype == queryinput {
-				rows, err := s.conn[v].Query(context.Background(), in.GetMessage())
+			if exectype == queryinput || exectype == execinput {
+				// return data for execinput
+				sql := in.GetMessage()
+				if exectype == execinput {
+					sql = fmt.Sprintf("%s RETURNING *", in.GetMessage())
+				}
+				log.Printf("sql statement: %v\n", sql)
+				rows, err := s.conn[v].Query(context.Background(), sql)
 				if err != nil {
 					fmt.Println("issue with execution of query statement", in.GetMessage(), err)
 					errout = err
@@ -192,8 +199,10 @@ func (s *MessageServer) execByConn(in *qsr.QueryRequest, connid *[]string, exect
 				if rows != nil {
 					defer rows.Close()
 				}
-			} else if exectype == execinput {
-				_, err := s.conn[v].Exec(context.Background(), in.GetMessage())
+			} else if exectype == execnoreturninput {
+				sql := in.GetMessage()
+				log.Printf("sql statement: %v\n", sql)
+				_, err := s.conn[v].Exec(context.Background(), sql)
 				if err != nil {
 					fmt.Println("issue with execution of exec statement", in.GetMessage(), err)
 					errout = err
